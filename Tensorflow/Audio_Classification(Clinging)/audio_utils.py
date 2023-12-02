@@ -37,3 +37,16 @@ def read_file_properties(filename):
     length_in_frames = len(y)
     
     return (num_channels, sample_rate, bit_depth, avg_rms, length_in_seconds, length_in_frames)  # Added length_in_samples
+
+def envelope(y, rate, threshold):
+    mask = []
+    y = pd.Series(y).apply(np.abs)
+    y_mean = y.rolling(window=int(rate/20),
+                       min_periods=1,
+                       center=True).max()
+    for mean in y_mean:
+        if mean > threshold:
+            mask.append(True)
+        else:
+            mask.append(False)
+    return mask, y_mean
