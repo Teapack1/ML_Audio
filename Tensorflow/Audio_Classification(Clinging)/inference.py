@@ -40,7 +40,7 @@ class SoundClassificationService:
         return cls._instance
     
 
-    def listen_and_predict(self, duration=1, overlap=0.5):
+    def listen_and_predict(self, duration=3, overlap=0.5):
         """Listen to live audio and make predictions."""
         buffer_length = int(self.config["sample_rate"] * duration)
         buffer = np.zeros(buffer_length)
@@ -57,10 +57,12 @@ class SoundClassificationService:
                     buffer = np.roll(buffer, -len(audio_chunk))
                     buffer[-len(audio_chunk):] = audio_chunk.flatten()
                     prediction_feature = self.audio_processor(buffer)
-                    prediction = self.model.predict(prediction_feature)
+                    print(prediction_feature.shape)
+                    reshaped_feature = prediction_feature.reshape(1, 130, self.config["num_mels"], self.config["num_channels"])
+                    prediction = self.model.predict(reshaped_feature)
                     keyword = self.idx2label(prediction, self.labels_encoder)
                     if keyword:
-                        print(f"Predicted Keyword: {keyword}, with: {prediction}")
+                        print(f"Predicted Keyword: {keyword}, with: {prediction * 100}")
         except KeyboardInterrupt:
             print("Stopped listening.")
 
