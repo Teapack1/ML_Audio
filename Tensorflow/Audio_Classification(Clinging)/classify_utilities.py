@@ -1,7 +1,8 @@
 import struct
 import librosa
 import numpy as np
-import pandas as pd  # Assuming you are using pandas
+import pandas as pd
+
 
 class AudioProcessor:
     def __init__(
@@ -11,25 +12,30 @@ class AudioProcessor:
         fmax=11000,
         n_fft=2048,
         hop_length=512,
-        slice_length=None,
+        audio_chunk=0.5,
+        slice_audio = False,
     ):
         self.sample_rate = sample_rate
         self.n_mels = n_mels
         self.fmax = fmax
         self.n_fft = n_fft
         self.hop_length = hop_length
-        self.slice_length = slice_length
+        self.audio_chunk = audio_chunk
+        self.slice_audio = slice_audio
 
     def __call__(self, data):
         return self.feature_extractor(data)
 
     def feature_extractor(self, data):
-        if self.slice_length is not None:
-            sample_length = self.slice_length * self.sample_rate
+        if self.slice_audio:
+            print("sliced.")
+            sample_length = self.audio_chunk * self.sample_rate
 
             librosa_audio_sliced = data[:sample_length]
             if len(data) < sample_length:
-                librosa_audio_sliced = np.pad(data, (0, sample_length - len(data)), constant_values=0)
+                librosa_audio_sliced = np.pad(
+                    data, (0, sample_length - len(data)), constant_values=0
+                )
             data = librosa_audio_sliced
 
         spectrogram = librosa.feature.melspectrogram(
@@ -41,10 +47,18 @@ class AudioProcessor:
             hop_length=self.hop_length,
         )
         spectrogram = librosa.power_to_db(spectrogram, ref=np.max)
-        spectrogram = np.abs(spectrogram)
+
+        # general scale normalization with min-max:
+        # min_db, max_db = -60, 80
+        # spectrogram = np.clip((spectrogram - min_db) / (max_db - min_db), 0, 1)
+        # spectrogram *= 255
+
+        # Min-Max normalization
+        spectrogram = (spectrogram - spectrogram.min()) / (
+            spectrogram.max() - spectrogram.min()
+        )
 
         return spectrogram.T
-
 
     def read_file_properties(self, filename):
         wave_file = open(filename, "rb")
@@ -85,7 +99,6 @@ class AudioProcessor:
             length_in_frames,
         )  # Added length_in_samples
 
-
     def envelope(self, y, rate, threshold):
         mask = []
         y = pd.Series(y).apply(np.abs)
@@ -96,7 +109,6 @@ class AudioProcessor:
             else:
                 mask.append(False)
         return mask, y_mean
-
 
     def idx2label(self, idx, encoder):
         idx_reshaped = np.array(idx).reshape(1, -1)
