@@ -1,23 +1,33 @@
 import os
 import argparse
 from inference_class import SoundClassificationService
+import asyncio
 
+# Paths to model and labeler
 DATA_DIR = "data"
 MODEL_PATH = os.path.join("model", "model.keras")
 LABELER_PATH = os.path.join("model", "label_encoder.joblib")
 
-AUDIO_CHUNK = 3 # seconds
+# Recording parameters
+AUDIO_CHUNK = 0.4 # seconds
+LISTENING_HOP_LENGTH = 0.4 # seconds
 NUM_CHANNELS = 1
 SAMPLE_RATE = 44100
 
+# Extracting features
 MEL_FRAMES = 35
 N_MELS = 256
 NFFT = 2048
 FMAX = 44100 // 2
 HOP_LENGTH = 512
 
+# Artnet config
+ARTNET_IP = "127.0.0.1"
+ARTNET_UNIVERSE = 0
+ARTNET_CHANNEL = 0
 
-def main():
+
+async def main_async():
     parser = argparse.ArgumentParser(description="Audio Classification Service")
     parser.add_argument(
         "--model_path",
@@ -76,8 +86,32 @@ def main():
     parser.add_argument(
         "--listening_hop_length",
         type=float,
-        default=0.5,
+        default=LISTENING_HOP_LENGTH,
         help="Hop length for listening in seconds",
+    )
+    parser.add_argument(
+        "--trigger_words",
+        nargs="+",
+        default=["cheers"],  # Default trigger words
+        help="List of words that will trigger the action"
+    )
+    parser.add_argument(
+        "--artnet_channel",
+        type=int,
+        default=ARTNET_CHANNEL,
+        help="Number of samples between successive FFT windows",
+    )
+    parser.add_argument(
+        "--artnet_universe",
+        type=int,
+        default=ARTNET_UNIVERSE,
+        help="Number of samples between successive FFT windows",
+    )
+    parser.add_argument(
+        "--artnet_ip",
+        type=str,
+        default=ARTNET_IP,
+        help="Path to the trained model file",
     )
 
     args = parser.parse_args()
@@ -96,11 +130,18 @@ def main():
         "confidence_threshold": args.confidence_threshold,
         "listening_hop_length": args.listening_hop_length,
         "device": "cpu",
+        "trigger_words": args.trigger_words,
+        "artnet_channel": args.artnet_channel,
+        "artnet_universe": args.artnet_universe,
+        "artnet_ip": args.artnet_ip,
     }
 
     service = SoundClassificationService.get_instance(config)
-    service.listen_and_predict(duration=args.audio_chunk, overlap=args.listening_hop_length)
+    await service.async_init()
+    await service.listen_and_predict(duration=args.audio_chunk, overlap=args.listening_hop_length)
 
+def main():
+    asyncio.run(main_async())
 
 if __name__ == "__main__":
     main()
