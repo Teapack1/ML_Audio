@@ -57,7 +57,8 @@ class AudioProcessor:
         spectrogram = (spectrogram - spectrogram.min()) / (
             spectrogram.max() - spectrogram.min()
         )
-
+        spectrogram *= 255  
+        
         return spectrogram.T
 
     def read_file_properties(self, filename):

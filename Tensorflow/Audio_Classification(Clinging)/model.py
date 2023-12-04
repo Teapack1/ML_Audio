@@ -1,10 +1,10 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Conv2D, Reshape, Flatten, MaxPooling2D, Dropout, GlobalAveragePooling2D, BatchNormalization
 from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.applications import MobileNetV3Large, MobileNetV3Large
-from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2B0
-from keras.applications.inception_resnet_v2 import InceptionResNetV2
+from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
+from tensorflow.keras.applications.densenet import DenseNet121
+from tensorflow.keras.applications.convnext import ConvNeXtBase
 
 
 class Deep_NN:
@@ -59,27 +59,6 @@ class Deep_NN:
         return model
 
 
-    def exception_nn(self):
-        input_shape = (self.dim1, self.dim2, self.dim3)
-        base_model = Xception(
-            weights=None, include_top=False, input_shape=input_shape
-        )
-
-        for layer in base_model.layers:
-            layer.trainable = True
-
-        # Add custom layers on top of the base model
-        x = base_model.output
-        x = GlobalAveragePooling2D()(x)
-        x = Dense(1024, activation="relu")(x)
-        predictions = Dense(self.num_classes, activation="softmax")(x)
-
-        # Create the full model
-        model = Model(inputs=base_model.input, outputs=predictions)
-
-        return model
-
-
     def mobilenetv3_nn(self):
         input_shape = (self.dim1, self.dim2, self.dim3)  # Make sure this shape includes the channels dimension
         base_model = MobileNetV3Large(
@@ -100,7 +79,7 @@ class Deep_NN:
     
     def effnetv2_nn(self):
         input_shape = (self.dim1, self.dim2, self.dim3)  # Make sure this shape includes the channels dimension
-        base_model = EfficientNetV2B0(
+        base_model = EfficientNetV2S(
             weights=None,  # No pre-trained weights
             include_top=True,  # Include the top (classification) layer
             input_shape=input_shape,
@@ -115,9 +94,28 @@ class Deep_NN:
 
         return model
     
-    def inresv2_nn(self):
+    def dense_nn(self):
+        input_shape = (self.dim3, self.dim1, self.dim2)  # Make sure this shape includes the channels dimension
+        base_model = DenseNet121(
+            weights=None,  # No pre-trained weights
+            include_top=True,  # Include the top (classification) layer
+            input_shape=input_shape,
+            classes=self.num_classes  # Specify the number of classes
+        )
+
+        for layer in base_model.layers:
+            layer.trainable = True
+
+        # The base model already includes a `Dense` layer with `self.num_classes` units
+        model = Model(inputs=base_model.input, outputs=base_model.output)
+
+        return model
+    
+    
+    def convnet_nn(self):
+        
         input_shape = (self.dim1, self.dim2, self.dim3)  # Make sure this shape includes the channels dimension
-        base_model = InceptionResNetV2(
+        base_model = ConvNeXtBase(
             weights=None,  # No pre-trained weights
             include_top=True,  # Include the top (classification) layer
             input_shape=input_shape,
