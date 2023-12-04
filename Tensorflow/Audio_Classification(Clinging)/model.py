@@ -4,7 +4,9 @@ from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.applications import MobileNetV3Large, MobileNetV3Large
 from tensorflow.keras.applications.efficientnet_v2 import EfficientNetV2S
 from tensorflow.keras.applications.densenet import DenseNet121
-from tensorflow.keras.applications.convnext import ConvNeXtBase
+from tensorflow.keras.applications.convnext import ConvNeXtBase, ConvNeXtTiny
+
+
 
 
 class Deep_NN:
@@ -112,16 +114,27 @@ class Deep_NN:
         return model
     
     
-    def convnet_nn(self):
-        
+    def convnext_nn(self, type="base"):
         input_shape = (self.dim1, self.dim2, self.dim3)  # Make sure this shape includes the channels dimension
-        base_model = ConvNeXtBase(
-            weights=None,  # No pre-trained weights
-            include_top=True,  # Include the top (classification) layer
-            input_shape=input_shape,
-            classes=self.num_classes  # Specify the number of classes
-        )
-
+        
+        if type == "base":
+            base_model = ConvNeXtBase(
+                weights=None,  # No pre-trained weights
+                include_top=True,  # Include the top (classification) layer
+                input_shape=input_shape,
+                classes=self.num_classes  # Specify the number of classes
+            )
+        elif type == "tiny":
+            base_model = ConvNeXtTiny(
+                weights=None,  # No pre-trained weights
+                include_top=True,  # Include the top (classification) layer
+                input_shape=input_shape,
+                classes=self.num_classes  # Specify the number of classes
+            )
+        else:
+            raise ValueError("Type must be either 'base' or 'tiny'.")
+            return None
+             
         for layer in base_model.layers:
             layer.trainable = True
 

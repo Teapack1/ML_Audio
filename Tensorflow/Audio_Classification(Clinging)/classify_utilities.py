@@ -14,6 +14,7 @@ class AudioProcessor:
         hop_length=512,
         audio_chunk=0.5,
         slice_audio = False,
+        data_range = 1.0
     ):
         self.sample_rate = sample_rate
         self.n_mels = n_mels
@@ -22,8 +23,10 @@ class AudioProcessor:
         self.hop_length = hop_length
         self.audio_chunk = audio_chunk
         self.slice_audio = slice_audio
+        self.data_range = data_range
 
-    def __call__(self, data):
+    def __call__(self, data, data_range):
+        self.data_range = data_range
         return self.feature_extractor(data)
 
     def feature_extractor(self, data):
@@ -57,7 +60,9 @@ class AudioProcessor:
         spectrogram = (spectrogram - spectrogram.min()) / (
             spectrogram.max() - spectrogram.min()
         )
-        spectrogram *= 255  
+        
+        # Scale the data range
+        spectrogram *= self.data_range
         
         return spectrogram.T
 
